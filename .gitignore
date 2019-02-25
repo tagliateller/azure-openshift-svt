@@ -3,3 +3,4 @@
 *.local
 *.parameters.local.json
 *.retry
+*.bak
