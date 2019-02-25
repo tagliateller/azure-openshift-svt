@@ -86,17 +86,12 @@
         network_interfaces: svt-nic
       register: result
 
-#    - name: debug result
-#      debug: 
-#        msg: "{{ result }}"
- 
     - name: Add new instance to host group
       add_host:
-        hostname: "{{ item['properties']['ipConfigurations'][0]['properties']['publicIPAddress'] }}"
+        hostname: "{{ item['properties']['ipConfigurations'][0]['properties']['publicIPAddress']['properties']['ipAddress'] }}"
         groupname: svthosts
       loop: "{{ ansible_facts.azure_vm.properties.networkProfile.networkInterfaces }}"
-  
-    
+ 
 - hosts: svthosts
   user: azureuser
      
@@ -110,28 +105,44 @@
 
     - name: Install Packages
       yum:
-        name: "{{ item }}"
-        state: latest
-      with_items:
-        - maven
-        - python-flask
-        - python-ceph
-        - python-boto3     
+        name:
+          - git
+          - maven
+          - python-flask
+          - python-ceph
+          - python-boto3
+        state: present
+      become: yes
 
+    - name: download oc client
+      get_url:
+        url: https://github.com/openshift/origin/releases/download/v3.11.0/openshift-origin-client-tools-v3.11.0-0cbc58b-linux-64bit.tar.gz 
+        dest: /tmp
 
-       
-#    - name: Add new instance to host group
-#      add_host:
-#        hostname: "{{ item['ips'][0].public_ip }}"
-#        groupname: azure_vms
-#      loop: "{{ azure.deployment.instances }}"
-#
-#    - hosts: azure_vms
-#      user: devopscle
-#      tasks:
-#        - name: Wait for SSH to come up
-#          wait_for:
-#            port: 22
-#            timeout: 2000
-#            state: started
-#        - name: echo the hos
+    - name: untar oc client
+      unarchive:
+        remote_src: yes
+        src: /tmp/openshift-origin-client-tools-v3.11.0-0cbc58b-linux-64bit.tar.gz
+        dest: /tmp/
+
+    - name: copy binary
+      copy:
+        remote_src: yes
+        src: /tmp/openshift-origin-client-tools-v3.11.0-0cbc58b-linux-64bit/oc
+        dest: /usr/local/bin/
+      become: yes
+
+    - name: remove dir
+      file:
+        path: /tmp/openshift-origin-client-tools-v3.11.0-0cbc58b-linux-64bit/
+        state: absent
+
+    - name: remove file
+      file:
+        path: /tmp/openshift-origin-client-tools-v3.11.0-0cbc58b-linux-64bit.tar.gz
+        state: absent
+
+    - git:
+        repo: "https://github.com/openshift/svt.git" 
+        dest: "/home/{{ ansible_user }}/openshift-svt"
+        version: master
