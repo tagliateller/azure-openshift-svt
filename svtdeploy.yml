@@ -1,0 +1,86 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: no
+
+  vars:
+    with_cluster: false
+    
+  vars_files:
+    - clusterconfig.yml
+    - svtconfig.yml
+    
+  tasks:
+        
+    - name: Create a resource group
+      azure_rm_resourcegroup:
+        name: "{{ svt_resource_group_name }}"
+        location: "{{ location }}"
+
+    - name: Create virtual network
+      azure_rm_virtualnetwork:
+        resource_group: "{{ svt_resource_group_name }}"
+        name: svt_vnet
+        address_prefixes: "10.0.0.0/16"
+
+    - name: Add subnet
+      azure_rm_subnet:
+        resource_group: "{{ svt_resource_group_name }}"
+        name: svt_subnet
+        address_prefix: "10.0.0.0/24"
+        virtual_network: svt_vnet
+
+    - name: Create Bastion Security Group
+      azure_rm_securitygroup:
+        resource_group: "{{ svt_resource_group_name }}"
+        name: svt-nsg
+        tags: name=svt_nsg
+        rules:
+          - name: svt-nsg-ssh
+            protocol: Tcp
+            destination_port_range: 22
+            access: Allow
+            priority: 500
+            direction: Inbound
+            description: "SSH access from Internet"
+ 
+    - name: create public ip
+      azure_rm_publicipaddress:
+        resource_group: "{{ svt_resource_group_name }}"
+        name: svt_publicip
+        allocation_method: Dynamic
+        
+    - name: Create network interface
+      azure_rm_networkinterface:
+        name: svt-nic
+        resource_group: "{{ svt_resource_group_name }}"
+        virtual_network: svt_vnet
+        subnet_name: svt_subnet
+        security_group: svt-nsg
+        ip_configurations:
+          - name: ipconfig1
+            public_ip_address_name: svt_publicip
+            primary: True
+
+    - name: create master vm
+      azure_rm_virtualmachine:
+        resource_group: "{{ svt_resource_group_name }}"
+        name: svt-vm
+        vm_size: Standard_A1_v2
+        os_type: Linux
+        ssh_password_enabled: no
+        image:
+          offer: CentOS
+          publisher: OpenLogic
+          sku: '7.5'
+          version: latest
+        admin_username: azureuser
+        ssh_public_keys:
+          - path: /home/azureuser/.ssh/authorized_keys
+            key_data: "{{ sshPublicKey }}"
+        managed_disk_type: Standard_LRS
+        data_disks:
+          - lun: 0 # data
+            disk_size_gb: 128
+            managed_disk_type: Standard_LRS
+        network_interfaces: svt-nic
