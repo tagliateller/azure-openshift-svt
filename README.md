@@ -141,3 +141,8 @@ IOError: [Errno 2] No such file or directory: '/home/azureuser/.kube/config'
 
 OK - geht nicht, da versucht wird ein oc new-project auszuführen
 
+# Ausführung mit Playbook
+
+- zuerst Aufbau des Clusters
+- dann Aufbau des Testservers
+- 
