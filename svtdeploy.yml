@@ -218,3 +218,12 @@
         repo: "https://github.com/openshift/svt.git" 
         dest: "/home/{{ ansible_user }}/openshift-svt"
         version: master
+
+    - name: Login into cluster
+      command: "oc login {{ master_url }} -u {{ adminUsername }} -p {{ adminPassword }}"
+
+    - name: Execute test
+      command: python cluster-loader.py -f pyconfig.yaml
+      args:
+        chdir: "/home/{{ ansible_user }}/openshift-svt/openshift_scalability/"
+     
