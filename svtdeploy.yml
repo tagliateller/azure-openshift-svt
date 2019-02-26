@@ -17,6 +17,7 @@
         state: absent
         subscription_id: "{{ azure_subscription_id }}"
         resource_group_name: "{{ resource_group_name }}"
+        location: "{{ location }}"
       ignore_errors: yes
       when: with_cluster
 
@@ -25,6 +26,7 @@
         state: present
         subscription_id: "{{ azure_subscription_id }}"
         resource_group_name: "{{ resource_group_name }}"
+        location: "{{ location }}"
         parameters:
             _artifactsLocation:
                 value: "{{ _artifactsLocation }}"
@@ -166,6 +168,10 @@
 - hosts: svthosts
   user: azureuser
      
+  vars_files:
+    - clusterconfig.yml
+    - svtconfig.yml
+
   tasks:
 
     - name: Wait for SSH to come up
@@ -182,6 +188,7 @@
           - python-flask
           - python-ceph
           - python-boto3
+          - httpd-tools  
         state: present
       become: yes
 
@@ -201,6 +208,7 @@
         remote_src: yes
         src: /tmp/openshift-origin-client-tools-v3.11.0-0cbc58b-linux-64bit/oc
         dest: /usr/local/bin/
+        mode: 755
       become: yes
 
     - name: remove dir
@@ -218,9 +226,16 @@
         repo: "https://github.com/openshift/svt.git" 
         dest: "/home/{{ ansible_user }}/openshift-svt"
         version: master
+        force: yes
+
+    - name: create directory
+      file:
+        path: /etc/origin
+        state: directory
+        owner: "{{ ansible_user }}"
 
     - name: Login into cluster
-      command: "oc login {{ master_url }} -u {{ adminUsername }} -p {{ adminPassword }} --insecure-skip-tls-verify=false"
+      command: "oc login {{ master_url }} -u {{ adminUsername }} -p {{ openshiftPassword }} --insecure-skip-tls-verify=false"
 
     - name: Execute test
       command: python cluster-loader.py -f pyconfig.yaml
