@@ -18,6 +18,7 @@
         subscription_id: "{{ azure_subscription_id }}"
         resource_group_name: "{{ resource_group_name }}"
       ignore_errors: yes
+      when: with_cluster
 
     - name: Create Origin Cluster
       azure_rm_deployment:
@@ -75,10 +76,12 @@
                 value: "{{ defaultSubDomain }}"
         template_link: 'https://raw.githubusercontent.com/tagliateller/openshift-origin/release-3.9/azuredeploy.json'
       register: azure
+      when: with_cluster
 
     - name: debug cluster result
       debug:
         msg: "{{ azure }}"
+      when: with_cluster
         
     - name: Create a resource group
       azure_rm_resourcegroup:
