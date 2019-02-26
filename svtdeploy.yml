@@ -220,7 +220,7 @@
         version: master
 
     - name: Login into cluster
-      command: "oc login {{ master_url }} -u {{ adminUsername }} -p {{ adminPassword }}"
+      command: "oc login {{ master_url }} -u {{ adminUsername }} -p {{ adminPassword }} --insecure-skip-tls-verify=false"
 
     - name: Execute test
       command: python cluster-loader.py -f pyconfig.yaml
