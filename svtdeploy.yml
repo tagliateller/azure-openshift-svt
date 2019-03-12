@@ -15,7 +15,7 @@
     - name: Destroy Origin Cluster
       azure_rm_deployment:
         state: absent
-        subscription_id: "{{ azure_subscription_id }}"
+#        subscription_id: "{{ azure_subscription_id }}"
         resource_group_name: "{{ resource_group_name }}"
         location: "{{ location }}"
       ignore_errors: yes
@@ -24,7 +24,7 @@
     - name: Create Origin Cluster
       azure_rm_deployment:
         state: present
-        subscription_id: "{{ azure_subscription_id }}"
+#        subscription_id: "{{ azure_subscription_id }}"
         resource_group_name: "{{ resource_group_name }}"
         location: "{{ location }}"
         parameters:
